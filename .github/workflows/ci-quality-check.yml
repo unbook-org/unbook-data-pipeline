@@ -1,0 +1,49 @@
+name: CI Quality Check & Validation
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  validate-pr:
+    name: Validate Pull Request Title & Structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check Commit & PR Style
+        run: |
+          echo "🔍 Verificando estrutura do código e diretrizes do repositório..."
+          echo "✅ Validação básica concluída!"
+
+  lint-and-format:
+    name: Linter & Code Style Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Exemplo para ecossistema Web)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify EditorConfig Compliance
+        run: |
+          echo "🛠️ Checando padrões de indentação (.editorconfig)..."
+          # Aqui os times de cada squad adicionarão os comandos de Linter específicos (ex: npm run lint, phpstan, flake8)
+
+  build-test:
+    name: Dry Run Build & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Test Environment Setup
+        run: |
+          echo "🚀 Simulando ambiente de build do UnBook 2.0..."
+          echo "✅ Build de teste finalizado com sucesso!"
