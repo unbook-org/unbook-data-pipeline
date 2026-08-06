@@ -1,0 +1,21 @@
+# Data Wrangling
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Scraping & HTTP
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+selenium>=4.20.0
+urllib3>=2.2.0
+
+# Database & Storage
+SQLAlchemy>=2.0.0
+psycopg2-binary>=2.9.9
+
+# Utilities & Formatting
+python-dotenv>=1.0.1
+rich>=13.7.0
+Unidecode>=1.3.8
+
+# Testing
+pytest>=8.0.0

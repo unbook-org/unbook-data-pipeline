@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Serviço da Pipeline de Dados (Python 3.12)
+  data-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: unbook_data_pipeline
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    env_file:
+      - .env.example
+    environment:
+      - DB_HOST=postgres_db
+    depends_on:
+      - postgres_db
+    networks:
+      - unbook_network
+    # Comando padrão para manter o container vivo ou rodar a CLI
+    entrypoint: ["python", "main.py", "--source", "all"]
+
+  # Banco de Dados PostgreSQL Local para Desenvolvimento
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: unbook_postgres_dev
+    restart: always
+    environment:
+      POSTGRES_DB: unbook_db
+      POSTGRES_USER: unbook_user
+      POSTGRES_PASSWORD: unbook_password_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - unbook_network
+
+volumes:
+  postgres_data:
+
+networks:
+  unbook_network:
+    driver: bridge

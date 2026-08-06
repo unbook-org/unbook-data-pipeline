@@ -1,0 +1,54 @@
+# Byte-compiled / Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Data Files (Evita subir arquivos grandes/dados brutos locais)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+*.db
+*.sqlite3
+*.csv
+*.json
+
+# Playwright & Browser Drivers
+/ms-playwright/
+/ms-playwright-python/
+.selenium/
+geckodriver
+chromedriver
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docker & Logs
+*.log
+docker-compose.override.yml
+.docker/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
