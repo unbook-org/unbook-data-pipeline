@@ -1,0 +1,28 @@
+# ==============================================================================
+# UNBOOK 2.0 - DATA PIPELINE CODEOWNERS
+# ==============================================================================
+# Toda vez que um Pull Request alterar arquivos em uma das regras abaixo,
+# o GitHub solicitará automaticamente a revisão do time responsável.
+
+# 1. Donos Padrão do Repositório (Fallback)
+# Qualquer alteração geral exige aprovação da liderança/maintainers
+* @unbook-org/lead-maintainers @unbook-org/data-engineers
+
+# 2. Configurações Globais & Infraestrutura
+/Dockerfile                         @unbook-org/lead-maintainers
+/docker-compose.yml                 @unbook-org/lead-maintainers
+/.github/                           @unbook-org/lead-maintainers
+/requirements.txt                   @unbook-org/data-engineers
+
+# 3. Módulos de Extração Por Squad (Extractors)
+/src/extractors/sigaa/              @unbook-org/squad-sigaa
+/src/extractors/legacy/             @unbook-org/squad-legacy
+/src/extractors/social/             @unbook-org/squad-social
+
+# 4. Transformadores & Carga no Banco Central
+/src/transformers/                  @unbook-org/data-engineers
+/src/loaders/                       @unbook-org/data-engineers
+/src/utils/                         @unbook-org/data-engineers
+
+# 5. Dados Brutos e Processados
+/data/                              @unbook-org/data-engineers
