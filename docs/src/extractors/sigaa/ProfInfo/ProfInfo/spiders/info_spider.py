@@ -218,3 +218,6 @@ class InfoSpiderSpider(scrapy.Spider):
         
         # Envia o dicionário final para ser processado pelos Feeds/Pipelines do Scrapy
         yield portal
+        
+        # usando o comando -> python -m json.tool resultados_final.json resultados_formatados.json
+        #você pode formatar os resultados para facilitar visualização
