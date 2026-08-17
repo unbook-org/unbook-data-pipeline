@@ -27,7 +27,7 @@ data/processed/*
 *.db
 *.sqlite3
 *.csv
-*.json
+
 
 # Playwright & Browser Drivers
 /ms-playwright/
