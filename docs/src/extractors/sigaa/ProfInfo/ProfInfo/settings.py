@@ -48,7 +48,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 16
 # DOWNLOAD_DELAY: Tempo de espera (em segundos) entre as requisições para o mesmo site.
 # Atualmente em 0.25s (4 requisições por segundo por domínio). 
 # Para modo turbo, mude para 0.1 ou até 0 (sem limite, disparando o mais rápido possível).
-DOWNLOAD_DELAY = 0.25
+DOWNLOAD_DELAY = 0.5
 
 # AUTOTHROTTLE_ENABLED: Regulador automático de velocidade. 
 # Quando False, o Scrapy ignora a carga do servidor e baixa na velocidade máxima bruta ditada acima.

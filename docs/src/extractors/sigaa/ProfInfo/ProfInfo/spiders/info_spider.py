@@ -221,3 +221,5 @@ class InfoSpiderSpider(scrapy.Spider):
         
         # usando o comando -> python -m json.tool resultados_final.json resultados_formatados.json
         #você pode formatar os resultados para facilitar visualização
+        
+        
