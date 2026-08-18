@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 import scrapy
 from typing import List, Dict, Any, Generator
 
@@ -21,37 +21,33 @@ class InfoSpiderSpider(scrapy.Spider):
     """
     name = "info_spider_oficial"
     handle_httpstatus_list = [404, 500] 
-    caminho_arquivo = r"F:\UNB\Unbook\unbook-data-pipeline\Scraper\Professores\Resultado\resp_selenium.json"
     
-    def __init__(self, *args, **kwargs) -> None:
-        """
-        Inicializa a spider, lê o arquivo JSON local e popula a lista de URLs iniciais.
-        
-        Lê o arquivo definido em `self.caminho_arquivo`. Se o arquivo existir e for 
-        valido, itera sobre a lista de dicionários extraindo a chave 'link_mais_info' 
-        para preencher a variável `self.start_urls`.
-        
-        Args:
-            *args: Argumentos posicionais padrão do Scrapy.
-            **kwargs: Argumentos nomeados padrão do Scrapy.
-        """
-        super(InfoSpiderSpider, self).__init__(*args, **kwargs)
-        self.start_urls = [] 
-        
-        self.logger.info(f"--- [DIagnóstico] Tentando ler o arquivo em: {self.caminho_arquivo}")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Raiz do projeto dinâmica
+        base_dir = Path(__file__).resolve().parents[5]
+        self.caminho_arquivo = (
+            base_dir 
+            / "src" 
+            / "extractors" 
+            / "sigaa" 
+            / "Professores" 
+            / "Resultado" 
+            / "resp_selenium.json"
+        )
+        self.start_urls = []
+
         try:
-            with open(self.caminho_arquivo, "r", encoding="utf-8") as file:
-                self.data_raw = json.load(file)
-                if self.data_raw:
-                    self.logger.info(f"--- [DIagnóstico] Sucesso! Numero de professores lidos: {len(self.data_raw)}")
-                    self.start_urls = [
-                        i.get("link_mais_info") 
-                        for i in self.data_raw 
-                        if isinstance(i, dict) and i.get("link_mais_info")
-                    ]
-                    self.logger.info(f"--- [ALERTA] TOTAL DE URLs GERADAS PARA O SCRAPY: {len(self.start_urls)}")
+            with open(self.caminho_arquivo, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                self.start_urls = [
+                    item.get("link_mais_info")
+                    for item in data
+                    if isinstance(item, dict) and item.get("link_mais_info")
+                ]
+                self.logger.info(f"URLs carregadas: {len(self.start_urls)}")
         except Exception as e:
-            self.logger.error(f"Erro ao ler o arquivo: {e}")
+            self.logger.error(f"Erro ao carregar resp_selenium.json: {e}")
 
     # 1. ETAPA PORTAL
     def parse(self, response: scrapy.http.Response) -> Generator[scrapy.Request, None, None]:
