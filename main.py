@@ -1,40 +1,39 @@
 import argparse
 import sys
-from rich.console import Console
-from rich.panel import Panel
+from pathlib import Path
 
-console = Console()
+# Adiciona o diretório raiz ao path do Python para evitar erros de importação
+sys.path.append(str(Path(__file__).parent))
+
+# Importa o módulo que acabamos de construir
+from src.extractors.social.social_parser import run_extraction as parse_social_data
 
 def main():
-    parser = argparse.ArgumentParser(description="UnBook 2.0 - Data Pipeline CLI")
+    parser = argparse.ArgumentParser(description="UnBook 2.0 - Data Pipeline Engine")
     parser.add_argument(
         "--source", 
-        choices=["legacy", "sigaa", "all"], 
+        choices=["legacy", "sigaa", "social", "all"], 
         default="all", 
-        help="Fonte dos dados a serem processados (legacy, sigaa, ou all)"
-    )
-    parser.add_argument(
-        "--export", 
-        choices=["db", "json", "csv"], 
-        default="json", 
-        help="Formato de saída dos dados processados"
+        help="Fonte de dados para processar"
     )
 
     args = parser.parse_args()
 
-    console.print(Panel.fit("[bold green]🚀 UnBook 2.0 - Data Pipeline Engine[/bold green]"))
+    print("🚀 Iniciando UnBook 2.0 Pipeline...")
 
-    if args.source in ["legacy", "all"]:
-        console.print("📦 [yellow]Iniciando processamento dos dados legados (.txt)...[/yellow]")
-        # TODO: Chamar src.extractors.legacy_parser
-        console.print("✅ [green]Dados legados processados com sucesso![/green]")
-
-    if args.source in ["sigaa", "all"]:
-        console.print("🌐 [yellow]Iniciando Web Scraping do SIGAA/UnB...[/yellow]")
-        # TODO: Chamar src.extractors.sigaa_scraper
-        console.print("✅ [green]Scraping do SIGAA finalizado![/green]")
-
-    console.print(f"🎉 [bold blue]Pipeline concluída com sucesso! Saída: {args.export}[/bold blue]")
+    if args.source in ["social", "all"]:
+        print("\n💬 [SOCIAL SQUAD] Processando dump bruto do Facebook...")
+        
+        # Chama o parser passando os caminhos corretos (DOM -> Parsed)
+        resultados = parse_social_data(
+            input_filepath="data/raw/social/facebook_dump_dom.json",
+            output_filepath="data/processed/social_parsed.json"
+        )
+        
+        if resultados:
+            print(f"✅ Feito! {len(resultados)} posts prontos para o banco de dados!")
+        else:
+            print("⚠️ Aviso: Nenhum dado gerado. Verifique se o facebook_dump_dom.json existe.")
 
 if __name__ == "__main__":
     main()
