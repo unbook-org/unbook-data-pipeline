@@ -8,11 +8,11 @@
 
 Este repositório é gerenciado pelo time de **Engenharia de Dados (`@unbook-org/data-engineers`)** do UnBook 2.0. Ele tem como responsabilidade principal alimentar a base viva da plataforma através de três frentes de trabalho:
 
-1. **`sigaa`**: Web Scraping ativo e contínuo para extração da oferta de turmas, docentes e ementas direto do SIGAA/UnB.
-2. **`legacy`**: Resgate, parsing e sanitização da base histórica do UnBook 1.0 (arquivos `.txt` e bases antigas).
-3. **`social`**: Mapeamento, extração e categorização de relatos e materiais vindos de grupos comunitários de estudantes (Telegram, etc).
+1. **`sigaa`**: Web Scraping assíncrono (Scrapy) para mapeamento completo do corpo docente, ementas e histórico de turmas da UnB a partir do arquivo Seed.
+2. **`social`**: Mineração automatizada via DOM (Playwright) e higienização/anonimização (NLP/Regex) de relatos e avaliações comunitárias (Facebook, Telegram).
+3. **`legacy`**: Resgate, parsing e sanitização da base histórica do UnBook 1.0.
 
-Os dados processados por este pipeline populam o banco central mantido pela **`unbook-api`**, servindo aos módulos de busca (`unbook-search`), guia de cursos (`unbook-catalog`) e simulador de grade (`unbook-planner`).
+Os dados processados por este pipeline populam o banco central mantido pela **`unbook-api`**, servindo aos módulos de busca (`unbook-search`), raio-x de docentes com a **Análise UnBook** e simulador de grade (`unbook-planner`).
 
 ---
 
@@ -26,50 +26,44 @@ unbook-pipeline/
 │   └── workflows/
 │       └── ci-quality-check.yml        # CI automatizado de testes e linting
 ├── data/
-│   ├── processed/                      # [Incluso no .gitignore] Dados limpos (JSON/CSV)
-│   │   └── .gitkeep
-│   └── raw/                            # [Incluso no .gitignore] Dados brutos não tratados
-│       ├── .gitkeep
-│       ├── legacy/                     # Arquivos .txt / planilhas do UnBook 1.0
-│       ├── scraped/                    # HTMLs e retornos puros do SIGAA
-│       └── social/                     # Dumps e conversas categorizadas
+│   ├── processed/                      # [Incluso no .gitignore] Dados limpos e normalizados
+│   │   ├── sigaa_professores.json
+│   │   └── social_parsed.json
+│   └── raw/                            # [Incluso no .gitignore / Git LFS] Dados brutos
+│       ├── legacy/                     # Arquivos .txt / dumps do UnBook 1.0
+│       ├── sigaa/
+│       │   ├── seed_professores.json   # 📦 Arquivo Seed (Rastreado via Git LFS)
+│       │   └── sigaa_bruto.json        # Extração bruta pós-Scrapy
+│       └── social/
+│           └── facebook_dump_dom.json  # Dump DOM capturado pelo Playwright
 ├── docs/
 │   └── ARCHITECTURE.md                 # Documentação técnica do pipeline
 ├── src/
 │   ├── __init__.py
 │   ├── extractors/                     # 🔌 MÓDULOS DE EXTRAÇÃO POR SQUAD
 │   │   ├── __init__.py
+│   │   ├── base.py                     # Contrato base (BaseExtractor)
 │   │   ├── legacy/                     # Squad Legacy (@unbook-org/squad-legacy)
-│   │   │   ├── __init__.py
-│   │   │   └── legacy_parser.py        # Leitor e parser das avaliações antigas
 │   │   ├── sigaa/                      # Squad SIGAA (@unbook-org/squad-sigaa)
-│   │   │   ├── __init__.py
-│   │   │   └── sigaa_scraper.py        # Web Scraper da oferta de turmas UnB
+│   │   │   ├── run.py                  # Orquestrador do crawler SIGAA
+│   │   │   ├── scrapy_app/             # Motor Scrapy modular
+│   │   │   │   └── prof_info/spiders/info_spider.py
+│   │   │   └── seed/                   # Gerador do arquivo de links/seed
 │   │   └── social/                     # Squad Social (@unbook-org/squad-social)
-│   │       ├── __init__.py
-│   │       └── social_scraper.py       # Extrator de dados/relatos de grupos
+│   │       ├── run.py                  # Orquestrador da esteira social
+│   │       ├── scraper.py              # Extrator assíncrono Playwright
+│   │       └── parser.py               # Anonimização e limpeza de texto
 │   ├── loaders/                        # 🚚 INGESTÃO DE DADOS
-│   │   ├── __init__.py
-│   │   └── db_loader.py                # Ingestão dos dados limpos no PostgreSQL
-│   ├── transformers/                   # 🧹 LIMPEZA E PADRONIZAÇÃO
-│   │   ├── __init__.py
-│   │   ├── clean_courses.py            # Tratamento de códigos e nomes de disciplinas
-│   │   └── clean_professors.py         # Normalização de nomes de docentes
-│   └── utils/                          # 🛠️ UTILITÁRIOS E HELPERS
-│       ├── __init__.py
-│       └── logger.py                   # Logger formatado da CLI
-├── tests/                              # Suíte de testes automatizados
-│   ├── test_extractors.py
-│   └── test_transformers.py
-├── .editorconfig
-├── .env.example
+│   │   └── postgres_loader.py          # Ingestão dos dados processados no PostgreSQL
+│   ├── transformers/                   # 🧹 LIMPEZA E ENTITY MATCHING
+│   │   └── sigaa_cleaner.py            # Normalização e resolução de entidades
+│   └── utils/                          # 🛠️ UTILITÁRIOS GLOBAIS
+│       ├── logger.py                   # Logger colorido e padronizado
+│       └── paths.py                    # Âncora centralizada de caminhos do projeto
+├── tests/
 ├── .gitignore
-├── CODE_OF_CONDUCT.md
-├── CONTRIBUTING.md
-├── docker-compose.yml
-├── Dockerfile
-├── LICENSE
-├── main.py                             # Orquestrador da CLI do pipeline
+├── fb_cookies.json                     # [SENSÍVEL] Cookies de sessão (ignorado no git)
+├── main.py                             # Orquestrador CLI central do pipeline
 └── requirements.txt
 
 ```
@@ -79,104 +73,113 @@ unbook-pipeline/
 ## 🛠️ Tech Stack
 
 * **Linguagem:** Python 3.12+
-* **Scraping & Mining:** BeautifulSoup4, Playwright / Scrapy, Requests, Telethon
-* **Data Wrangling:** Pandas, NumPy, Pydantic
-* **Database & ORM:** SQLAlchemy, psycopg2 (PostgreSQL)
-* **Orquestração & Infra:** CLI Interna (`main.py`), Docker, GitHub Actions
+* **Scraping & Automação:** Scrapy, Playwright, Requests
+* **Data Wrangling & NLP:** Pydantic, Regex, Pandas
+* **Database & Storage:** PostgreSQL, Git LFS (Large File Storage)
+* **Logs & CLI:** ANSI Color Logging, Argparse
 
 ---
 
-## 📄 Contrato de Dados (Output Schema)
+## 🚀 Guia de Instalação e Execução
 
-Para manter a consistência entre todas as frentes de extração, todo extrator em `src/extractors/` **deve** transformar e emitir os dados no formato padronizado abaixo antes de repassar aos *transformers*:
+### 1. Pré-requisitos
 
-```json
-{
-  "course_code": "CIC0004",
-  "course_name": "ALGORITMOS E PROGRAMAÇÃO DE COMPUTADORES",
-  "professor_name": "NOME DO PROFESSOR",
-  "campus": "Darcy Ribeiro",
-  "semester": "2026/1",
-  "rating": {
-    "recommended": true,
-    "emoji_vibe": "🤯",
-    "grade_attained": "MS"
-  },
-  "comment": "Avaliação sanitizada e sem dados sensíveis.",
-  "source": "legacy"
-}
+* **Python 3.12+** instalado
+* **Git** e **Git LFS** instalados no sistema:
+* *Ubuntu/Debian:* `sudo apt install git git-lfs && git lfs install`
+* *macOS (Homebrew):* `brew install git-lfs && git lfs install`
+* *Windows:* Baixe em [git-lfs.com](https://www.google.com/search?q=https://git-lfs.com)
 
-```
+
 
 ---
 
-## 🚀 Como Executar Localmente
+### 2. Passo a Passo de Instalação
 
-### Pré-requisitos
+**1. Clone o repositório e baixe os arquivos LFS:**
 
-* Python 3.12+ instalado
-* Git configurado
-* Docker / Docker Compose (Opcional, para subir o banco local)
-
-### Passo a Passo
-
-1. **Clone o repositório:**
 ```bash
 git clone [https://github.com/unbook-org/unbook-pipeline.git](https://github.com/unbook-org/unbook-pipeline.git)
 cd unbook-pipeline
 
+# Garante o download do arquivo data/raw/sigaa/seed_professores.json
+git lfs pull
+
 ```
 
+**2. Crie e ative o ambiente virtual:**
 
-2. **Crie e ative o ambiente virtual:**
 ```bash
 python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# ou: venv\Scripts\activate  # Windows
+source venv/bin/activate    # Linux/macOS
+# venv\Scripts\activate     # Windows
 
 ```
 
+**3. Instale as dependências:**
 
-3. **Instale as dependências:**
 ```bash
 pip install -r requirements.txt
 
 ```
 
+**4. Instale os navegadores do Playwright:**
 
-4. **Configure as variáveis de ambiente:**
 ```bash
-cp .env.example .env
+playwright install chromium
 
 ```
 
+---
 
-5. **Execute a CLI do Pipeline:**
+### 3. Executando o Pipeline via CLI (`main.py`)
+
+O `main.py` é o ponto de entrada único para todas as extrações.
+
+#### 🎓 Squad SIGAA (Corpo Docente & Turmas)
+
 ```bash
-# Executar extração do legado (.txt)
-python main.py --source legacy
+# Execução de teste (rápida, limitada aos primeiros 10 professores)
+python main.py --source sigaa --limit 10
 
-# Executar raspagem da oferta de turmas do SIGAA/UnB
-python main.py --source sigaa --semester 2026_1
-
-# Executar pipeline completo (Extração -> Limpeza -> Carga)
-python main.py --full-run
+# Execução completa (todos os docentes da UnB)
+python main.py --source sigaa
 
 ```
 
+#### 💬 Squad Social (Comunidades & Redes)
 
+> **Nota de Segurança:** Para raspar novos dados do Facebook, garanta que o arquivo `fb_cookies.json` com sua sessão válida esteja presente na raiz (este arquivo é estritamente ignorado pelo Git).
+
+```bash
+# Apenas processar e anonimizar o dump local existente (data/raw/social/facebook_dump_dom.json)
+python main.py --source social
+
+# Forçar nova raspagem no Facebook via Playwright + Limpeza
+python main.py --source social --scrape-facebook
+
+# Nova raspagem com limite de registros para validação
+python main.py --source social --scrape-facebook --limit 10
+
+```
+
+#### 🚀 Execução Geral (Pipeline Completo)
+
+```bash
+# Executa SIGAA e Social sequencialmente
+python main.py --source all
+
+```
 
 ---
 
 ## 👥 Governança & Contribuição
 
-Este repositório utiliza **`CODEOWNERS`** e proteção de branches no GitHub.
+Este repositório utiliza **`CODEOWNERS`** e proteção de branches:
 
-* Nenhuma alteração entra na branch `main` sem passar por **Pull Request (PR)**.
-* Alterações na pasta `src/extractors/sigaa/` exigem aprovação da **`@unbook-org/squad-sigaa`**.
-* Alterações na pasta `src/extractors/legacy/` exigem aprovação da **`@unbook-org/squad-legacy`**.
-* Alterações na pasta `src/extractors/social/` exigem aprovação da **`@unbook-org/squad-social`**.
+* Nenhuma alteração entra na branch `main` sem passar por **Pull Request (PR)** aprovado.
+* Alterações em `src/extractors/sigaa/` exigem aprovação da **`@unbook-org/squad-sigaa`**.
+* Alterações em `src/extractors/social/` exigem aprovação da **`@unbook-org/squad-social`**.
+* Alterações em `src/extractors/legacy/` exigem aprovação da **`@unbook-org/squad-legacy`**.
 
-Consulte o guia completo de contribuição em [`CONTRIBUTING.md`](./CONTRIBUTING.md) antes de abrir a sua branch!
-
----
+Consulte o guia completo em [`CONTRIBUTING.md`](https://www.google.com/search?q=./CONTRIBUTING.md) antes de submeter novos scrapers.
