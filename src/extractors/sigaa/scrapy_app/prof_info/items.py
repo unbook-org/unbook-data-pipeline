@@ -8,6 +8,16 @@ from dataclasses import dataclass
 
 @dataclass
 class ProfinfoItem:
-    # define the fields for your item here like:
-    # name: str | None = None
-    pass
+    nome: str
+    departamento: str
+
+@dataclass
+class TurmaItem:
+    course_code: str
+    course_name: str
+    class_code: str
+    schedules_raw: str
+    location: str
+    vacancies: int
+    docente: str
+    departamento: str
