@@ -24,11 +24,15 @@ fb_cookies.json
 data/backup/*
 data/raw/*
 !data/raw/.gitkeep
+!data/raw/legacy/
+!data/raw/legacy/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/legacy_reviews.json
 *.db
 *.sqlite3
 *.csv
+!tests/**/*.csv
 
 
 # Playwright & Browser Drivers

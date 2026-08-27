@@ -19,3 +19,8 @@ SOCIAL_RAW_DIR = RAW_DATA_DIR / "social"
 SOCIAL_COOKIES_FILE = BASE_DIR / "fb_cookies.json"  # Ou dentro de data/raw/social/
 SOCIAL_DUMP_DOM_FILE = SOCIAL_RAW_DIR / "facebook_dump_dom.json"
 SOCIAL_PROCESSED_FILE = PROCESSED_DATA_DIR / "social_parsed.json"
+
+# Caminhos específicos - Legacy (formulário de avaliações)
+LEGACY_RAW_DIR = RAW_DATA_DIR / "legacy"
+LEGACY_CSV_FILE = LEGACY_RAW_DIR / "avaliacoes_disciplinas.csv"
+LEGACY_PROCESSED_FILE = PROCESSED_DATA_DIR / "legacy_reviews.json"
