@@ -18,6 +18,15 @@ def extrair_inteiro(texto):
     return int(match.group()) if match else 0
 
 
+def limpar_docentes(texto):
+    """Remove a carga horária embutida no nome do docente (ex: 'RODRIGO HADDAD (45h)' -> 'RODRIGO HADDAD')"""
+    return re.sub(r'\s*\(\d+h\)', '', texto).strip()
+
+
+def limpar_espacos(texto):
+    return re.sub(r'\s+', ' ', texto).strip()
+
+
 def parse_turmas(html, nome_depto):
     """Extrai as turmas de um HTML da página de listagem do SIGAA, vinculando o docente ao departamento informado."""
     soup = BeautifulSoup(html, "html.parser")
@@ -48,15 +57,17 @@ def parse_turmas(html, nome_depto):
                 cols = row.find_all("td")
 
                 # Verifica se a linha tem o formato esperado e se já temos uma disciplina mãe
-                if len(cols) >= 8 and current_course_code:
+                # Colunas: [0] turma [1] ano-período [2] docente [3] horário
+                #          [4] vagas ofertadas [5] vagas ocupadas [6] local
+                if len(cols) >= 7 and current_course_code:
                     class_code = cols[0].get_text(strip=True)
-                    docente = cols[2].get_text(strip=True)
+                    docente = limpar_docentes(cols[2].get_text(strip=True))
 
                     # O SIGAA costuma retornar "24M34 (12/08/2026 - 15/12/2026)"
                     schedules_raw = cols[3].get_text(strip=True).split('(')[0].strip()
 
-                    vacancies = extrair_inteiro(cols[5].get_text(strip=True))
-                    location = cols[7].get_text(strip=True)
+                    vacancies = extrair_inteiro(cols[4].get_text(strip=True))
+                    location = cols[6].get_text(strip=True)
 
                     resultados.append({
                         "course_code": current_course_code,
@@ -112,7 +123,7 @@ def main():
             select_dept = Select(dept_select_element)
 
             opcao_atual = select_dept.options[i]
-            nome_depto = opcao_atual.text.strip()
+            nome_depto = limpar_espacos(opcao_atual.text)
 
             print(f"\n--- Processando: {nome_depto} ---")
             select_dept.select_by_index(i)
