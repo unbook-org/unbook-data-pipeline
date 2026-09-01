@@ -13,6 +13,8 @@ SIGAA_RAW_DIR = RAW_DATA_DIR / "sigaa"
 SIGAA_SEED_FILE = SIGAA_RAW_DIR / "seed_professores.json"
 SIGAA_FINAL_RAW_FILE = SIGAA_RAW_DIR / "sigaa_bruto.json"
 SIGAA_PROCESSED_FILE = PROCESSED_DATA_DIR / "sigaa_professores.json"
+SIGAA_SCRAPED_DIR = RAW_DATA_DIR / "scraped"
+SIGAA_CLASSES_FILE = SIGAA_SCRAPED_DIR / "sigaa_classes.json"
 
 # Caminhos específicos - Social
 SOCIAL_RAW_DIR = RAW_DATA_DIR / "social"

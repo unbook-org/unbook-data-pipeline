@@ -22,7 +22,6 @@ venv.bak/
 # Data Files (Evita subir arquivos grandes/dados brutos locais)
 fb_cookies.json
 data/backup/*
-data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
