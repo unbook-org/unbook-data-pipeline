@@ -6,8 +6,6 @@ BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.append(str(BASE_DIR))
 
-from src.extractors.sigaa.run import run_sigaa_pipeline
-from src.extractors.social.run import run_social_pipeline
 from src.utils.logger import get_logger
 
 logger = get_logger("Orchestrator")
@@ -17,8 +15,8 @@ def main():
         description="UnBook 2.0 - Data Ingestion & Extraction Pipeline",
         formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument("--source", choices=["sigaa", "social", "all"], default="all")
-    parser.add_argument("--limit", type=int, default=None, help="Limite de professores.")
+    parser.add_argument("--source", choices=["sigaa", "social", "legacy", "all"], default="all")
+    parser.add_argument("--limit", type=int, default=None, help="Limite de registros processados.")
     parser.add_argument("--scrape-facebook", action="store_true", help="Força nova raspagem no Facebook via Playwright")
 
     args = parser.parse_args()
@@ -35,6 +33,7 @@ def main():
             logger.warning(f"MODO DE TESTE ATIVADO: A extração será limitada a {args.limit} docentes.")
         
         try:
+            from src.extractors.sigaa.run import run_sigaa_pipeline
             logger.info("Acessando rotinas do SIGAA para orquestração das Spiders...")
             out_sigaa = run_sigaa_pipeline(limit=args.limit)
             logger.info(f"✅ SIGAA finalizado com sucesso! Dados unificados em {out_sigaa.name}")
@@ -45,10 +44,21 @@ def main():
     if args.source in ["social", "all"]:
         logger.info("💬 [SQUAD SOCIAL] Inicializando processamento de relatos...")
         try:
+            from src.extractors.social.run import run_social_pipeline
             out_social = run_social_pipeline(scrape=args.scrape_facebook, limit=args.limit)
             logger.info(f"✅ Social processado com sucesso!")
         except Exception as e:
             logger.error(f"❌ Falha no módulo Social: {e}")
+
+    # 3. Pipeline Legacy (formulário / UnBook 1.0)
+    if args.source in ["legacy", "all"]:
+        logger.info("📦 [SQUAD LEGACY] Processando avaliações históricas...")
+        try:
+            from src.extractors.legacy.run import run_legacy_pipeline
+            out_legacy = run_legacy_pipeline(limit=args.limit)
+            logger.info(f"✅ Legacy finalizado! {len(out_legacy)} avaliações válidas.")
+        except Exception as e:
+            logger.error(f"❌ Falha no módulo Legacy: {e}")
 
     logger.info("🏁 Pipeline global concluído!")
 

@@ -26,11 +26,13 @@ unbook-pipeline/
 │   └── workflows/
 │       └── ci-quality-check.yml        # CI automatizado de testes e linting
 ├── data/
-│   ├── processed/                      # [Incluso no .gitignore] Dados limpos e normalizados
-│   │   ├── sigaa_professores.json
-│   │   └── social_parsed.json
+│   ├── processed/                      # Dados limpos e normalizados
+│   │   ├── sigaa_professores.json      # [gitignore]
+│   │   ├── social_parsed.json          # [gitignore]
+│   │   └── legacy_reviews.json         # Avaliações válidas (matéria, professor, comentário)
 │   └── raw/                            # [Incluso no .gitignore / Git LFS] Dados brutos
-│       ├── legacy/                     # Arquivos .txt / dumps do UnBook 1.0
+│       ├── legacy/
+│       │   └── avaliacoes_disciplinas.csv  # Dump do formulário (gitignored)
 │       ├── sigaa/
 │       │   ├── seed_professores.json   # 📦 Arquivo Seed (Rastreado via Git LFS)
 │       │   └── sigaa_bruto.json        # Extração bruta pós-Scrapy
@@ -44,6 +46,8 @@ unbook-pipeline/
 │   │   ├── __init__.py
 │   │   ├── base.py                     # Contrato base (BaseExtractor)
 │   │   ├── legacy/                     # Squad Legacy (@unbook-org/squad-legacy)
+│   │   │   ├── parser.py               # Parser do formulário de avaliações
+│   │   │   └── run.py
 │   │   ├── sigaa/                      # Squad SIGAA (@unbook-org/squad-sigaa)
 │   │   │   ├── run.py                  # Orquestrador do crawler SIGAA
 │   │   │   ├── scrapy_app/             # Motor Scrapy modular
@@ -56,11 +60,15 @@ unbook-pipeline/
 │   ├── loaders/                        # 🚚 INGESTÃO DE DADOS
 │   │   └── postgres_loader.py          # Ingestão dos dados processados no PostgreSQL
 │   ├── transformers/                   # 🧹 LIMPEZA E ENTITY MATCHING
+│   │   ├── clean_courses.py            # Código SIGAA vs. nome da disciplina
+│   │   ├── clean_professors.py         # Normalização de nomes de docentes
 │   │   └── sigaa_cleaner.py            # Normalização e resolução de entidades
 │   └── utils/                          # 🛠️ UTILITÁRIOS GLOBAIS
 │       ├── logger.py                   # Logger colorido e padronizado
 │       └── paths.py                    # Âncora centralizada de caminhos do projeto
 ├── tests/
+│   ├── test_legacy_parser.py
+│   └── test_transformers.py
 ├── .gitignore
 ├── fb_cookies.json                     # [SENSÍVEL] Cookies de sessão (ignorado no git)
 ├── main.py                             # Orquestrador CLI central do pipeline
@@ -163,10 +171,22 @@ python main.py --source social --scrape-facebook --limit 10
 
 ```
 
+#### 📦 Squad Legacy (Formulário de avaliações)
+
+O dump bruto do Google Forms fica em `data/raw/legacy/` (gitignored). O parser extrai só avaliações usáveis no contrato da pipeline (`course_*`, `professor_name`, `comment`, `rating`).
+
+```bash
+# Coloque o CSV exportado em:
+# data/raw/legacy/avaliacoes_disciplinas.csv
+
+python main.py --source legacy
+# Saída: data/processed/legacy_reviews.json
+```
+
 #### 🚀 Execução Geral (Pipeline Completo)
 
 ```bash
-# Executa SIGAA e Social sequencialmente
+# Executa SIGAA, Social e Legacy sequencialmente
 python main.py --source all
 
 ```
