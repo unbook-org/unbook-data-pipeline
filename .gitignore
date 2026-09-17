@@ -53,3 +53,4 @@ docker-compose.override.yml
 .pytest_cache/
 .coverage
 htmlcov/
+data/raw/scraped/sigaa_classes.json
