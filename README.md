@@ -189,6 +189,23 @@ python main.py --source legacy
 # Executa SIGAA, Social e Legacy sequencialmente
 python main.py --source all
 
+# Executa o pipeline completo e ingesta os dados diretamente no banco de dados (PostgreSQL/SQLite)
+python main.py --source all --load-db
+
+# Apenas higienizar, normalizar e carregar dados locais existentes no banco sem requisições de rede
+python main.py --source all --skip-scrape --load-db
+```
+
+#### 🚚 Carga no Banco de Dados (`src/loaders/postgres_loader.py`)
+
+O pipeline suporta ingestão relacional completa no PostgreSQL (e fallback automático para SQLite em desenvolvimento local):
+
+```bash
+# Executa diretamente a carga no banco de dados a partir dos arquivos processados
+python main.py --source db
+
+# Carga com limite para testes rápidos
+python main.py --source db --limit 20
 ```
 
 ---

@@ -100,7 +100,16 @@ def run_legacy_parser(
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
     csv_path = input_path or find_legacy_csv()
+    destination = output_path or LEGACY_PROCESSED_FILE
     if csv_path is None:
+        if destination.exists():
+            logger.info(f"Nenhum CSV bruto em data/raw/legacy/. Carregando {destination.name} existente...")
+            with open(destination, "r", encoding="utf-8") as handle:
+                records = json.load(handle)
+            if limit:
+                records = records[:limit]
+            logger.info(f"✅ {len(records)} avaliações carregadas de {destination.name}")
+            return records
         logger.error("❌ Nenhum CSV encontrado em data/raw/legacy/")
         return []
 
