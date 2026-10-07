@@ -51,7 +51,7 @@ def loader_professores_supabase(dados):
 
     for i in dados: #iterando sobre cada item da lista "dados" (que nesse caso são os professores)
         print(f"! Posição atual: {dados.index(i)} !\n! Nome professor: {i["nome"]}\n !")
-        professores = (str(uuid.uuid4()), i["siape"], i["nome"].upper(), i["email"], i["imagem"], i["curriculo_lattes"], i["sala"], i["descricao"])
+        professores = (str(uuid.uuid4()), i["siape"], i["nome"].upper(), i["email"], i["imagem"], i["curriculo_lattes"], i["sala"], i["descricao"]) #payload com os dados 
         try:
             cursor.execute(comando_sql, professores) #executa o comando
 
@@ -69,3 +69,39 @@ def loader_professores_supabase(dados):
     print(f"Número de professores com erros gerais: {len(professores_erro)}\nOs professores são: ")
     for i in professores_erro:
         print(f"{professores_erro[i]}")
+
+def loader_campi_supabase():
+
+    conn = psycopg2.connect( #conectando ao banco de dados
+    host=dbhost,
+    port=dbport,
+    password=dbpass,
+    user=dbuser,  # Usuário obrigatório
+    dbname=db
+    )
+
+    if conn:
+        print("connection success")
+    cursor = conn.cursor()
+
+    comando_sql = """ 
+        INSERT INTO campi (
+        id, sigla, nome
+        ) VALUES (%s, %s, %s)
+        """ #comando para executar o update ou adição
+
+    campi_sigla = ["Darcy", "FCTE", "FCTS", "FUP"]
+    campi_nome = ["Campus Darcy Ribeiro", "Faculdade de Ciencias e Tecnologia em Engenharia", "Faculdade de Ciencias e Tecnologia em Saude", "Faculdade UnB Planaltina"]
+    for i in campi_sigla:
+        print(f"Campus selecionado: {i}")
+        campi = (str(uuid.uuid4()), i,  campi_nome[campi_sigla.index(i)]) #payload com os dados id, sigla, nome
+        try:
+            cursor.execute(comando_sql, campi) #executa o comando
+
+            conn.commit() #confirma a execucao
+        except Exception as err:
+            print(f"Campus com erro: {i}")
+            conn.rollback()
+    print("! Campi adicionados. !")
+
+loader_campi_supabase()
