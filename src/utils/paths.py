@@ -10,7 +10,7 @@ PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 # Caminhos específicos - SIGAA
 SIGAA_RAW_DIR = RAW_DATA_DIR / "sigaa"
-SIGAA_SEED_FILE = SIGAA_RAW_DIR / "seed_professores.json"
+SIGAA_SEED_FILE = SIGAA_RAW_DIR / "resp_selenium.json" # alterado para bater com o script que pega os slugs (siape)
 SIGAA_FINAL_RAW_FILE = SIGAA_RAW_DIR / "sigaa_bruto.json"
 SIGAA_PROCESSED_FILE = PROCESSED_DATA_DIR / "sigaa_professores.json"
 SIGAA_SCRAPED_DIR = RAW_DATA_DIR / "scraped"

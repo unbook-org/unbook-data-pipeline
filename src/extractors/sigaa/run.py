@@ -1,5 +1,6 @@
 import sys
 import json
+import os
 from pathlib import Path
 from typing import Optional
 from scrapy.crawler import CrawlerProcess
@@ -7,11 +8,11 @@ from scrapy.crawler import CrawlerProcess
 from src.extractors.base import BaseExtractor
 from src.extractors.sigaa.scrapy_app.prof_info.spiders.info_spider import InfoSpiderSpider
 from src.transformers.sigaa_cleaner import run_classes_cleaner, run_sigaa_cleaner
+from src.extractors.sigaa.seed.get_teacher_links import generate_seed_professores
 from src.utils.logger import get_logger
 from src.utils.paths import SIGAA_CLASSES_FILE, SIGAA_FINAL_RAW_FILE, SIGAA_PROCESSED_FILE, SIGAA_SEED_FILE
 
 logger = get_logger("SIGAA-Orch")
-
 
 class SigaaExtractor(BaseExtractor):
     """Extrator oficial da Squad SIGAA."""
@@ -42,49 +43,64 @@ def run_sigaa_pipeline(
             logger.error(f"Erro ao extrair turmas do SIGAA: {e}")
 
     if scrape:
-        logger.info(f"Acessando {SIGAA_SEED_FILE.name} para extração de matérias e dados dos docentes...")
-        logger.info(f"Iniciando Spider Scrapy... Limite: {limit if limit else 'Todos'}")
+        existe_seed = False
+        while existe_seed == False: #mantem no loop até gerar um seed ou decidir que ja gerou
 
-        SIGAA_FINAL_RAW_FILE.parent.mkdir(parents=True, exist_ok=True)
+            seed_professores = os.path.join("data", "raw", "sigaa", "resp_selenium.json") #local com lista de professores 
 
-        settings = {
-            "BOT_NAME": "ProfInfo",
-            "ROBOTSTXT_OBEY": False,
-            "COOKIES_ENABLED": False,
-            "FEED_EXPORT_ENCODING": "utf-8",
-            "CONCURRENT_REQUESTS": 32 if not limit or limit > 32 else limit,
-            "CONCURRENT_REQUESTS_PER_DOMAIN": 32 if not limit or limit > 32 else limit,
-            "DOWNLOAD_DELAY": 0.5,
-            "LOG_LEVEL": "WARNING",
-            "LOG_STDOUT": False,
-            "STATS_DUMP": False,
-            "FEEDS": {
-                str(SIGAA_FINAL_RAW_FILE): {
-                    "format": "json",
-                    "encoding": "utf8",
-                    "overwrite": True,
-                    "indent": 4,
-                }
-            },
-        }
+            if os.path.exists(seed_professores): #se já existe passa
+                existe_seed = True
+            else:
+                #seed nao existe, gerar uma nova:
+                if generate_seed_professores(): #se e quando gerar uma nova:
+                    existe_seed = True
 
-        try:
-            process = CrawlerProcess(settings)
-            process.crawl(InfoSpiderSpider, limit=limit)
-            process.start()
-            logger.info(f"✅ Spider finalizada. Dados brutos salvos em: {SIGAA_FINAL_RAW_FILE.name}")
-        except Exception as e:
-            logger.warning(f"Spider não executada ou já inicializada: {e}")
+        #só inicia se a seed existir
+        if existe_seed:
+            logger.info(f"Acessando {SIGAA_SEED_FILE.name} para extração de matérias e dados dos docentes...")
+            logger.info(f"Iniciando Spider Scrapy... Limite: {limit if limit else 'Todos'}")
 
-    # Limpeza e unificação
-    logger.info("Executando pipeline de limpeza e normalização do SIGAA...")
-    run_sigaa_cleaner()
+            SIGAA_FINAL_RAW_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-    if SIGAA_CLASSES_FILE.exists():
-        run_classes_cleaner()
+            settings = {
+                "BOT_NAME": "ProfInfo",
+                "ROBOTSTXT_OBEY": False,
+                "COOKIES_ENABLED": False,
+                "FEED_EXPORT_ENCODING": "utf-8",
+                "CONCURRENT_REQUESTS": 32 if not limit or limit > 32 else limit,
+                "CONCURRENT_REQUESTS_PER_DOMAIN": 32 if not limit or limit > 32 else limit,
+                "DOWNLOAD_DELAY": 0.5,
+                "LOG_LEVEL": "WARNING",
+                "LOG_STDOUT": False,
+                "STATS_DUMP": False,
+                "FEEDS": {
+                    str(SIGAA_FINAL_RAW_FILE): {
+                        "format": "json",
+                        "encoding": "utf8",
+                        "overwrite": True,
+                        "indent": 4,
+                    }
+                },
+            }
 
-    logger.info(f"✅ SIGAA finalizado com sucesso! Dados unificados em {SIGAA_PROCESSED_FILE.name}")
-    return SIGAA_PROCESSED_FILE
+            try:
+                process = CrawlerProcess(settings)
+                process.crawl(InfoSpiderSpider, limit=limit)
+                process.start()
+                logger.info(f"✅ Spider finalizada. Dados brutos salvos em: {SIGAA_FINAL_RAW_FILE.name}")
+            except Exception as e:
+                logger.warning(f"Spider não executada ou já inicializada: {e}")
+
+        # Limpeza e unificação
+        logger.info("Executando pipeline de limpeza e normalização do SIGAA...")
+        run_sigaa_cleaner()
+
+        if SIGAA_CLASSES_FILE.exists():
+            run_classes_cleaner()
+
+        logger.info(f"✅ SIGAA finalizado com sucesso! Dados unificados em {SIGAA_PROCESSED_FILE.name}")
+        return SIGAA_PROCESSED_FILE
+
 
 
 if __name__ == "__main__":
