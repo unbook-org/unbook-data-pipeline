@@ -36,8 +36,8 @@ def loader_professores_supabase(dados):
 
     comando_sql = """ 
         INSERT INTO professores (
-            id, siape, nome_completo, email_institucional, url_foto, url_lattes, localizacao_gabinete, descricao
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            id, siape, nome_completo, email_institucional, url_foto, url_lattes, localizacao_gabinete, descricao, departamento_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, SELECT id FROM departamentos WHERE nome = %s )
         ON CONFLICT (siape) DO UPDATE SET
             nome_completo = EXCLUDED.nome_completo,
             email_institucional = EXCLUDED.email_institucional,
@@ -46,12 +46,12 @@ def loader_professores_supabase(dados):
             localizacao_gabinete = EXCLUDED.localizacao_gabinete,
             descricao = EXCLUDED.descricao;
         """ #comando para executar o update ou adição
-
+        
     professores_erro=[] #lista para tratamento de erro de professores
 
     for i in dados: #iterando sobre cada item da lista "dados" (que nesse caso são os professores)
         print(f"! Posição atual: {dados.index(i)} !\n! Nome professor: {i["nome"]}\n !")
-        professores = (str(uuid.uuid4()), i["siape"], i["nome"].upper(), i["email"], i["imagem"], i["curriculo_lattes"], i["sala"], i["descricao"]) #payload com os dados 
+        professores = (str(uuid.uuid4()), i["siape"], i["nome"].upper(), i["email"], i["imagem"], i["curriculo_lattes"], i["sala"], i["descricao"], i["departamento"] ) #payload com os dados 
         try:
             cursor.execute(comando_sql, professores) #executa o comando
 
@@ -104,4 +104,29 @@ def loader_campi_supabase():
             conn.rollback()
     print("! Campi adicionados. !")
 
-loader_campi_supabase()
+def loader_departamentos_supabase():
+    conn = psycopg2.connect( #conectando ao banco de dados
+        host=dbhost,
+        port=dbport,
+        password=dbpass,
+        user=dbuser,  # Usuário obrigatório
+        dbname=db
+        )
+    
+    if conn:
+        print("connection success")
+    cursor = conn.cursor()
+
+    comando_sql = """ 
+        INSERT INTO departamentos (
+        id, sigla, nome
+        ) VALUES (%s, %s, %s)
+        """ #comando para executar 
+
+
+
+#  departamento = {
+#       intituto de fisica : [fisica1, fisica2, fisica3]
+#       departamento de matematica : [calculo1, calculo2]
+#   }
+
