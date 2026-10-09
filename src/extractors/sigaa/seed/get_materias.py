@@ -23,6 +23,9 @@ def limpar_nome_departamento(texto_bruto: str) -> str:
 def generate_seed_departamentos():
     options = webdriver.ChromeOptions()
     options.add_argument("--start-maximized")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
     # options.add_argument("--headless") # Descomente para rodar em segundo plano
 
     driver = webdriver.Chrome(options=options)
@@ -61,7 +64,7 @@ def generate_seed_departamentos():
             for i in range(len(opcoes_2)):  # Iteração sobre Departamentos len(opcoes_2) para rodar tudo
                 # Reseta e recarrega a página de busca a cada combinação
                 driver.get(url)
-                wait_rapido.until(EC.presence_of_element_located((By.ID, "form:unidades")))
+                wait_geral.until(EC.presence_of_element_located((By.ID, "form:unidades")))
 
                 # Seleciona o nível
                 Select(driver.find_element(By.ID, "form:nivel")).select_by_index(n)
@@ -97,7 +100,7 @@ def generate_seed_departamentos():
                     for index in range(total_linhas): #total_linhas para rodar tudo
                         try:
                             # Re-localiza a tabela e a linha atual a cada iteração
-                            wait_geral.until(EC.presence_of_element_located((By.ID, "formListagemComponentes")))
+                            wait_rapido.until(EC.presence_of_element_located((By.ID, "formListagemComponentes")))
                             tr = driver.find_elements(
                                 By.XPATH, "//form[@id='formListagemComponentes']//table/tbody/tr"
                             )[index]
@@ -108,7 +111,7 @@ def generate_seed_departamentos():
 
                             if not (codigo_elem and nome_elem and link_elem):
                                 continue
-
+                                
                             codigo = codigo_elem[0].text.strip().upper()
                             nome = nome_elem[0].text.strip().upper()
                             script_onclick = link_elem[0].get_attribute("onclick")
@@ -124,7 +127,7 @@ def generate_seed_departamentos():
                             driver.execute_script(script_onclick)
 
                             # Aguarda a tela de detalhes renderizar
-                            wait_geral.until(EC.presence_of_element_located((By.CLASS_NAME, "visualizacao")))
+                            wait_rapido.until(EC.presence_of_element_located((By.CLASS_NAME, "visualizacao")))
 
                             # Extração de detalhes (Ementa, Requisitos e Carga Horária)
                             pre_req, co_req, equiva = [], [], []
@@ -202,7 +205,8 @@ def generate_seed_departamentos():
 
                         except Exception as err_item:
                             print(f"  ❌ Erro ao processar item índice {index}: {err_item}")
-                            driver.back()
+                            driver.get(url)
+                            break
 
                 except Exception:
                     print(f"  [AVISO] Nenhum componente encontrado ou timeout para: {depto_nome_limpo}")
