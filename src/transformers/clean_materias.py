@@ -45,7 +45,8 @@ def lista_codigo_slug(data_professor):
         if codigo and codigo not in codigos_vistos:
             codigos_vistos.add(codigo)
             materias_unicas.append(item)
-            
+
+    print(len(materias_unicas))
     return materias_unicas
 
 
@@ -56,29 +57,19 @@ def limpa_materia(data_materia, data_professor):
     codigo_slug = lista_codigo_slug(data_professor)
     
     # 1. Cria um dicionário de busca rápida: {"CIC0004": "/docente/cic0004", ...}
-    mapa_slugs = {
-        item["codigo"]: item["slug"] 
-        for item in codigo_slug 
-        if item.get("codigo")
-    }
 
     # 2. Atualiza o campo 'slug' nas matérias
-    for materia in data_materia:
-        codigo_mat = materia.get("codigo", "")
+    for materia in data_materia[0:5]: #data materia -> materias.json
+        codigo_mat = materia.get("codigo")
+        print(codigo_mat, "Codigo Atual")
+        #procurar o codigo em professores
+        for codigo in codigo_slug:
+            if re.match(codigo_mat, codigo.get("codigo")):
+                print(f"Encontrou um match -> {codigo.get("slug")}")
+                materia["slug"] = codigo.get("slug")
+
         
-        # Procura correspondência do código exato ou via busca no texto do código
-        slug_encontrado = mapa_slugs.get(codigo_mat)
-        
-        # Se não achou por igualdade exata, tenta Regex/Busca parcial nos códigos conhecidos
-        if not slug_encontrado:
-            for cod_prof, slug_prof in mapa_slugs.items():
-                if cod_prof and re.search(re.escape(cod_prof), codigo_mat):
-                    slug_encontrado = slug_prof
-                    break
-        
-        # Atribui o slug encontrado ou um valor padrão/None
-        materia["slug"] = slug_encontrado
-        print(f"Processada: {materia}")
+        print(f"Processada: {materia.get("codigo")} -> nome {materia.get("nome")} -> slug{materia.get("slug")}")
 
     return data_materia
 
@@ -113,3 +104,4 @@ limpa_materia(data_materia,data_professor)
 #         }
 #       ] 
 #   }
+
