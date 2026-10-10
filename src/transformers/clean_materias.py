@@ -1,107 +1,154 @@
-import os
 import json
+import os
 import re
 
-#pegando o arquivo:
-caminho_arq_materias = os.path.join("data","raw","sigaa","materias.json")
-
-caminho_arq_professores = os.path.join("data","processed","sigaa_professores.json") #para pegar os slugs das materias
-
+caminho_arq_materias = os.path.join("data", "raw", "sigaa", "materias.json")
 
 try:
     with open(caminho_arq_materias, "r", encoding="utf-8") as materias:
         data_materia = json.load(materias)
-    with open(caminho_arq_professores, "r", encoding="utf-8") as professores:
-        data_professor = json.load(professores)
 except Exception as err:
     print(f"Arquivo não existe: {err}")
+    data_materia = []
 
 
+def limpa_req(data_materia):
+    data_materia_clean = []
 
-def clean_jsonfields(data): #     "( ( FGA0146 OU FGA0147 ) E ( FGA0085 ) )" Exemplo
-    for componente in data: #componente é a lista de dicionarios de materias
-        padrao_ou = r"\(\s*([a-zA-Z]\d{4})\s+OU\s+([a-zA-Z]\d{4})\s*\)"
+    for materia in data_materia:
+        # Tratamento seguro para pegar o primeiro item de pré/co-requisitos/equivalência
+        pre = materia.get("pre_requisito", [])
+        co = materia.get("co_requisito", [])
+        eq = materia.get("equivalencia", [])
 
+        materia["pre_requisito"] = pre[0].strip() if pre and pre[0] else ""
+        materia["co_requisito"] = co[0].strip() if co and co[0] else ""
+        materia["equivalencia"] = eq[0].strip() if eq and eq[0] else ""
 
-def lista_codigo_slug(data_professor):
-    """
-    Extrai matérias com slug dos professores e remove duplicatas.
-    """
-    lista_materia_slug = []
+        data_materia_clean.append(materia)
 
-    for professor in data_professor:
-        disciplinas_prof = [
-            {"codigo": d.get("codigo"), "slug": d.get("link")}
-            for d in professor.get("disciplinas", [])
-            if d.get("codigo")
-        ]
-        lista_materia_slug.extend(disciplinas_prof)
-
-    codigos_vistos = set()
-    materias_unicas = []
-
-    for item in lista_materia_slug:
-        codigo = item.get("codigo")
-        if codigo and codigo not in codigos_vistos:
-            codigos_vistos.add(codigo)
-            materias_unicas.append(item)
-
-    print(len(materias_unicas))
-    return materias_unicas
+    return data_materia_clean
 
 
-def limpa_materia(data_materia, data_professor):
-    """
-    Atribui o 'slug' correto a cada matéria em data_materia com base no mapa de professores.
-    """
-    codigo_slug = lista_codigo_slug(data_professor)
-    
-    # 1. Cria um dicionário de busca rápida: {"CIC0004": "/docente/cic0004", ...}
-
-    # 2. Atualiza o campo 'slug' nas matérias
-    for materia in data_materia[0:5]: #data materia -> materias.json
-        codigo_mat = materia.get("codigo")
-        print(codigo_mat, "Codigo Atual")
-        #procurar o codigo em professores
-        for codigo in codigo_slug:
-            if re.match(codigo_mat, codigo.get("codigo")):
-                print(f"Encontrou um match -> {codigo.get("slug")}")
-                materia["slug"] = codigo.get("slug")
-
-        
-        print(f"Processada: {materia.get("codigo")} -> nome {materia.get("nome")} -> slug{materia.get("slug")}")
-
-    return data_materia
-
-limpa_materia(data_materia,data_professor)
+# --- Lógica do Parser para Árvore de Condições (JSONField) ---
 
 
-# def for componente in data_materia():
+def tokenizar(expressao: str) -> list[str]:
+    """Divide a expressão em tokens (parênteses, operadores e códigos)."""
+    expressao_formatada = expressao.replace("(", " ( ").replace(")", " ) ")
+    tokens = expressao_formatada.split()
+    return [t for t in tokens if t.strip()]
 
-# #formato final departamentos 
-# {
-#     nome: nome-departamentos
-#     codigo: nao-definido-ainda    #############################################
-#     materias: [                   #dqui para baixo
-#         {codigo: codigo-materia
-#          nome: 
-#          slug:
-#          ementa:
-#          creditos:
-#          carga_horaria:
-#          departamento_id: #ignorar é do banco apenas
-#          co-requisito: { # ((1 ou 2) e 3)
-#              relação: "AND"
-#              condicao: [
-#                  { relação:"OR"
-#                   condicao: [
-#                       {materia_id:, codigo:},
-#                       {materia_id:, codigo:}
-#                   ]
-#                  },
-#                  {materia_id:, codigo:}
-#              ]
-#         }
-#       ] 
-#   }
 
+def parse_expressao(tokens: list[str]):
+    """Parser para converter tokens em estrutura lógica de dicionários aninhados."""
+    if not tokens:
+        return None
+
+    pilha_nos = []
+    pilha_ops = []
+
+    precedencia = {"OU": 1, "OR": 1, "E": 2, "AND": 2}
+
+    def aplicar_operador():
+        if not pilha_ops or len(pilha_nos) < 2:
+            return
+        op = pilha_ops.pop()
+        direita = pilha_nos.pop()
+        esquerda = pilha_nos.pop()
+
+        relacao = "OR" if op.upper() in ["OU", "OR"] else "AND"
+
+        condicoes = []
+
+        if isinstance(esquerda, dict) and esquerda.get("relação") == relacao:
+            condicoes.extend(esquerda["condicao"])
+        else:
+            condicoes.append(esquerda)
+
+        if isinstance(direita, dict) and direita.get("relação") == relacao:
+            condicoes.extend(direita["condicao"])
+        else:
+            condicoes.append(direita)
+
+        pilha_nos.append({"relação": relacao, "condicao": condicoes})
+
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+
+        if token == "(":
+            pilha_ops.append(token)
+        elif token == ")":
+            while pilha_ops and pilha_ops[-1] != "(":
+                aplicar_operador()
+            if pilha_ops and pilha_ops[-1] == "(":
+                pilha_ops.pop()
+        elif token.upper() in ["E", "AND", "OU", "OR"]:
+            op_atual = token.upper()
+            while (
+                pilha_ops
+                and pilha_ops[-1] != "("
+                and precedencia.get(pilha_ops[-1], 0)
+                >= precedencia.get(op_atual, 0)
+            ):
+                aplicar_operador()
+            pilha_ops.append(op_atual)
+        else:
+            pilha_nos.append({"materia_id": None, "codigo": token})
+        i += 1
+
+    while pilha_ops:
+        aplicar_operador()
+
+    return pilha_nos[0] if pilha_nos else None
+
+
+def formatar_requisito(expressao_texto: str) -> dict | None:
+    """Converte a string de pré-requisitos na estrutura JSON em árvore."""
+    if not expressao_texto or not expressao_texto.strip():
+        return None
+
+    tokens = tokenizar(expressao_texto)
+    operadores = {"E", "AND", "OU", "OR"}
+
+    if len(tokens) == 1 and tokens[0] not in operadores:
+        return {"materia_id": None, "codigo": tokens[0]}
+
+    return parse_expressao(tokens)
+
+
+# --- Aplicação e Formatação dos Campos ---
+
+
+def formata_jsonfield(data_materia):
+    clean_materias = []
+
+    for materia in data_materia:
+        # Formata pré-requisitos, co-requisitos e equivalências
+        materia["pre_requisito"] = formatar_requisito(
+            materia.get("pre_requisito", "")
+        )
+        materia["co_requisito"] = formatar_requisito(
+            materia.get("co_requisito", "")
+        )
+        materia["equivalencia"] = formatar_requisito(
+            materia.get("equivalencia", "")
+        )
+
+        clean_materias.append(materia)
+
+        # Imprime para verificação
+        print(
+            f"Matéria: {materia.get('codigo')} | Pré-requisito: {json.dumps(materia['pre_requisito'], ensure_ascii=False)}"
+        )
+
+    return clean_materias
+
+
+# Execução do pipeline
+materias_processadas = formata_jsonfield(limpa_req(data_materia))
+
+caminho_final = os.path.join("data", "processed", "materias_clean.json")
+with open(caminho_final, "w", encoding="utf-8") as final:
+    json.dump(materias_processadas, final, ensure_ascii=False, indent=4)
