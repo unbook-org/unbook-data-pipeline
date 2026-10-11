@@ -34,7 +34,6 @@ def generate_seed_professores():
 
         print(f"Total de opções encontradas: {len(opcoes)}")
 
-        # Limitando aos 5 primeiros para teste (igual você estava fazendo)
         for i in range(len(opcoes)): #len(opcoes)
             # Recarrega o elemento select a cada loop para evitar StaleElementReferenceException
             select_element = driver.find_element(By.ID, "form:departamento")

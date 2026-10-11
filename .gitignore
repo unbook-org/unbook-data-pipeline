@@ -47,6 +47,7 @@ chromedriver
 *.swp
 *.swo
 .DS_Store
+.ipynb
 
 # Docker & Logs
 *.log
