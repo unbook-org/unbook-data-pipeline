@@ -20,14 +20,19 @@ venv.bak/
 *.key
 
 # Data Files (Evita subir arquivos grandes/dados brutos locais)
-data/raw/*
+fb_cookies.json
+data/backup/*
 !data/raw/.gitkeep
+!data/raw/legacy/
+!data/raw/legacy/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/legacy_reviews.json
 *.db
 *.sqlite3
 *.csv
-*.json
+!tests/**/*.csv
+
 
 # Playwright & Browser Drivers
 /ms-playwright/
@@ -42,6 +47,7 @@ chromedriver
 *.swp
 *.swo
 .DS_Store
+.ipynb
 
 # Docker & Logs
 *.log
