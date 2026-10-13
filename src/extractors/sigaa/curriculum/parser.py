@@ -2,7 +2,7 @@
 Funções puras HTML -> dict/list das telas públicas de currículos do SIGAA.
 
 Sem rede e sem Playwright: cada função recebe o HTML de uma tela já baixada.
-Seletores e padrões documentados em docs/sigaa_curriculos_HANDOFF.md.
+Seletores e padrões exemplificados nas fixtures de tests/fixtures/sigaa_curriculo.py.
 """
 
 import re
@@ -247,7 +247,7 @@ def parse_curriculum_report(html: str) -> dict[str, Any]:
 
     Seções:
       - "Optativas": nature conforme a célula (Optativa), level = None;
-      - "Nº Nível": obrigatória recebe level = N; optativa fica com level = None (SPEC);
+      - "Nº Nível": obrigatória recebe level = N; optativa fica com level = None (level só para obrigatórias);
       - "Complementares": componentes descartados com aviso (sem valor no enum nature);
       - "Grupos de Componentes Optativos": não cria componentes, só confere que
         cada um já veio da seção Optativas.

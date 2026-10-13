@@ -2,14 +2,14 @@
 Navegação Playwright (async, Chromium headless) pelas telas públicas de currículos do SIGAA.
 
 Só obtém HTML; todo o parse é feito por src/extractors/sigaa/curriculum/parser.py.
-Mapa de navegação em docs/sigaa_curriculos_HANDOFF.md:
+Mapa de navegação:
 
   home.jsf -> lista.jsf?nivel=G (GET, já traz todos os cursos)
   -> curriculo.jsf?id=<curso> (GET direto)
   -> clique em "Relatório da Estrutura Curricular" (POST JSF, resposta na mesma URL)
   -> history.back() para o próximo relatório.
 
-Requisitos não funcionais (SPEC): até 2 sessões concorrentes, 1–2 s entre requisições,
+Requisitos não funcionais: até 2 sessões concorrentes, 1–2 s entre requisições,
 User-Agent do UnBook, 3 tentativas por curso com backoff exponencial, reinício da
 navegação quando a sessão/ViewState expira e checkpoint incremental retomável.
 """
@@ -242,6 +242,7 @@ class ScrapeSummary:
     components: int = 0
     elapsed_s: list[float] = field(default_factory=list)
     failures: list[dict[str, Any]] = field(default_factory=list)
+    program_ids: list[str] = field(default_factory=list)
 
     @property
     def avg_elapsed_s(self) -> float | None:
@@ -252,7 +253,7 @@ def summarize(checkpoint: dict[str, Any], program_ids: list[str] | None = None) 
     """Resumo do checkpoint (todo ele, ou só dos cursos selecionados neste run)."""
     records = checkpoint["programs"]
     ids = program_ids if program_ids is not None else list(records)
-    summary = ScrapeSummary(selected=len(ids))
+    summary = ScrapeSummary(selected=len(ids), program_ids=list(ids))
     for program_id in ids:
         record = records.get(program_id)
         if record is None:

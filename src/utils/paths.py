@@ -17,6 +17,7 @@ SIGAA_SCRAPED_DIR = RAW_DATA_DIR / "scraped"
 SIGAA_CLASSES_FILE = SIGAA_SCRAPED_DIR / "sigaa_classes.json"
 SIGAA_CLASSES_PROCESSED_FILE = PROCESSED_DATA_DIR / "sigaa_turmas.json"
 SIGAA_CURRICULA_RAW_FILE = SIGAA_RAW_DIR / "curriculos_bruto.json"
+SIGAA_CURRICULA_PROCESSED_FILE = PROCESSED_DATA_DIR / "sigaa_curriculos.json"
 
 # Caminhos específicos - Social
 SOCIAL_RAW_DIR = RAW_DATA_DIR / "social"

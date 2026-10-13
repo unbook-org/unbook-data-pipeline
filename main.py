@@ -102,7 +102,7 @@ def main():
 
             should_scrape = not args.skip_scrape
             out_curricula = run_sigaa_curricula_pipeline(limit=args.limit, scrape=should_scrape)
-            logger.info(f"✅ Matrizes curriculares finalizadas! Dados brutos em {out_curricula.name}")
+            logger.info(f"✅ Matrizes curriculares finalizadas! Dados processados em {out_curricula.name}")
         except Exception as e:
             logger.error(f"❌ Falha crítica no módulo de matrizes curriculares: {e}")
 

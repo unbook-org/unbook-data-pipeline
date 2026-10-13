@@ -8,6 +8,7 @@ from src.extractors.sigaa.curriculum.scraper import (
     scrape_curricula,
     summarize,
 )
+from src.transformers.clean_curricula import run_curricula_cleaner
 from src.utils.logger import get_logger
 from src.utils.paths import SIGAA_CURRICULA_RAW_FILE
 
@@ -35,8 +36,9 @@ def _log_summary(summary: ScrapeSummary) -> None:
 def run_sigaa_curricula_pipeline(limit: int | None = None, scrape: bool = True) -> Path:
     """
     Se scrape=True, extrai do SIGAA os currículos dos `limit` primeiros cursos,
-    retomando do checkpoint em SIGAA_CURRICULA_RAW_FILE. Sem scrape, só resume o bruto existente.
-    A normalização para data/processed/ é a Parte 4 (transformer).
+    retomando do checkpoint em SIGAA_CURRICULA_RAW_FILE. Sem scrape, não acessa a rede e
+    reprocessa só a partir do bruto existente.
+    Em seguida normaliza os cursos selecionados para SIGAA_CURRICULA_PROCESSED_FILE e loga a cobertura.
     """
     if scrape:
         logger.info(f"Iniciando extração de matrizes curriculares... Limite: {limit if limit else 'Todos'}")
@@ -49,7 +51,7 @@ def run_sigaa_curricula_pipeline(limit: int | None = None, scrape: bool = True) 
         raise FileNotFoundError(f"Raspagem pulada e bruto inexistente: {SIGAA_CURRICULA_RAW_FILE}")
 
     _log_summary(summary)
-    return SIGAA_CURRICULA_RAW_FILE
+    return run_curricula_cleaner(program_ids=summary.program_ids)
 
 
 if __name__ == "__main__":

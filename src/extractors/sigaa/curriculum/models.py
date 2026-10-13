@@ -1,4 +1,4 @@
-"""Modelos Pydantic do schema processado de currículos (docs/sigaa_curriculos_SPEC.md)."""
+"""Modelos Pydantic do schema processado de currículos (data/processed/sigaa_curriculos.json)."""
 
 from typing import Literal
 
