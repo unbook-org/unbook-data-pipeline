@@ -18,9 +18,10 @@ def main():
     )
     parser.add_argument(
         "--source",
-        choices=["sigaa", "social", "legacy", "db", "all"],
+        choices=["sigaa", "sigaa-curriculos", "social", "legacy", "db", "all"],
         default="all",
-        help="Fonte de dados a processar (sigaa, social, legacy, db ou all)",
+        help="Fonte de dados a processar (sigaa, sigaa-curriculos, social, legacy, db ou all).\n"
+        "sigaa-curriculos não entra em 'all': precisa ser pedida explicitamente.",
     )
     parser.add_argument(
         "--limit",
@@ -88,6 +89,22 @@ def main():
             logger.info(f"✅ SIGAA finalizado com sucesso! Dados unificados em {out_sigaa.name}")
         except Exception as e:
             logger.error(f"❌ Falha crítica no módulo SIGAA: {e}")
+
+    # 1b. Pipeline SIGAA - Matrizes curriculares (fora de "all": centenas de POSTs no SIGAA)
+    if args.source == "sigaa-curriculos":
+        logger.info("🎓 [SQUAD SIGAA] Inicializando extração de matrizes curriculares...")
+
+        if args.limit:
+            logger.warning(f"MODO DE TESTE ATIVADO: A extração será limitada a {args.limit} cursos.")
+
+        try:
+            from src.extractors.sigaa.curriculum.run import run_sigaa_curricula_pipeline
+
+            should_scrape = not args.skip_scrape
+            out_curricula = run_sigaa_curricula_pipeline(limit=args.limit, scrape=should_scrape)
+            logger.info(f"✅ Matrizes curriculares finalizadas! Dados brutos em {out_curricula.name}")
+        except Exception as e:
+            logger.error(f"❌ Falha crítica no módulo de matrizes curriculares: {e}")
 
     # 2. Pipeline Social (Facebook Feed)
     if args.source in ["social", "all"]:
