@@ -146,13 +146,28 @@ O `main.py` é o ponto de entrada único para todas as extrações.
 
 #### 🎓 Squad SIGAA (Corpo Docente & Turmas)
 
+Consulte o guia completo em [docs/SIGAA_TURMAS_PIPELINE.md](docs/SIGAA_TURMAS_PIPELINE.md).
+
 ```bash
+# --- 1. DOCENTES (Scrapy) ---
 # Execução de teste (rápida, limitada aos primeiros 10 professores)
 python main.py --source sigaa --limit 10
 
 # Execução completa (todos os docentes da UnB)
 python main.py --source sigaa
 
+# --- 2. TURMAS ABERTAS (Selenium) ---
+# Extração completa de todas as turmas de todos os departamentos de graduação
+python src/extractors/sigaa/seed/get_classes.py
+
+# Teste rápido de raspagem de turmas (apenas 2 departamentos)
+python src/extractors/sigaa/seed/get_classes.py --limit-depts 2
+
+# Raspagem via main.py
+python main.py --source sigaa --scrape-classes
+
+# Higienização das turmas raspadas (gera data/processed/sigaa_turmas.json)
+python -c "from src.transformers.sigaa_cleaner import run_classes_cleaner; run_classes_cleaner()"
 ```
 
 #### 💬 Squad Social (Comunidades & Redes)
@@ -168,7 +183,6 @@ python main.py --source social --scrape-facebook
 
 # Nova raspagem com limite de registros para validação
 python main.py --source social --scrape-facebook --limit 10
-
 ```
 
 #### 📦 Squad Legacy (Formulário de avaliações)
@@ -196,16 +210,22 @@ python main.py --source all --load-db
 python main.py --source all --skip-scrape --load-db
 ```
 
-#### 🚚 Carga no Banco de Dados (`src/loaders/postgres_loader.py`)
+#### 🚚 Carga no Banco de Dados Supabase (`src/loaders/postgres_loader.py`)
 
-O pipeline suporta ingestão relacional completa no PostgreSQL (e fallback automático para SQLite em desenvolvimento local):
+O pipeline suporta ingestão em lote direta no PostgreSQL/Supabase com resolução automática de dependências e chaves estrangeiras:
 
 ```bash
-# Executa diretamente a carga no banco de dados a partir dos arquivos processados
-python main.py --source db
+# Carregar APENAS as turmas no Supabase (em batch ultrarrápido ~5s)
+python src/loaders/postgres_loader.py --turmas
 
-# Carga com limite para testes rápidos
-python main.py --source db --limit 20
+# Carregar um arquivo específico de turmas
+python src/loaders/postgres_loader.py --file data/backup/sigaa_turmas.json
+
+# Carga completa de todas as tabelas (Campi, Departamentos, Matérias, Professores, Turmas)
+python src/loaders/postgres_loader.py --all
+
+# Ou via main.py
+python main.py --source db
 ```
 
 ---
