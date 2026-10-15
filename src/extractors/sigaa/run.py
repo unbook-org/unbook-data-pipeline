@@ -91,15 +91,16 @@ def run_sigaa_pipeline(
             except Exception as e:
                 logger.warning(f"Spider não executada ou já inicializada: {e}")
 
-        # Limpeza e unificação
+        # Limpeza e unificação de docentes
         logger.info("Executando pipeline de limpeza e normalização do SIGAA...")
         run_sigaa_cleaner()
 
-        if SIGAA_CLASSES_FILE.exists():
-            run_classes_cleaner()
+    if SIGAA_CLASSES_FILE.exists() or scrape_classes:
+        run_classes_cleaner()
 
-        logger.info(f"✅ SIGAA finalizado com sucesso! Dados unificados em {SIGAA_PROCESSED_FILE.name}")
-        return SIGAA_PROCESSED_FILE
+    target_return = SIGAA_CLASSES_PROCESSED_FILE if (scrape_classes and not scrape) else SIGAA_PROCESSED_FILE
+    logger.info(f"✅ SIGAA finalizado com sucesso! Artefato: {target_return.name}")
+    return target_return
 
 
 

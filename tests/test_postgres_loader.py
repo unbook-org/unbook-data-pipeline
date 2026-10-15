@@ -3,7 +3,6 @@ from sqlalchemy import create_engine, select
 
 from src.loaders.postgres_loader import (
     ensure_schema,
-    load_avaliacoes,
     load_campi,
     load_departamentos,
     load_materias,
@@ -73,44 +72,24 @@ def test_full_loading_pipeline(sqlite_db):
         }
     ]
 
-    reviews_sample = [
-        {
-            "course_code": "CIC0004",
-            "course_name": "Algoritmos",
-            "professor_name": "Maria da Silva",
-            "semester": "2026/1",
-            "rating": {
-                "didactics": 10.0,
-                "difficulty": "Médio",
-                "recommended": True,
-                "emoji_vibe": "😎",
-            },
-            "comment": "Excelente professora, explica com clareza e as avaliações são justas.",
-            "outcome": "passed",
-        }
-    ]
-
     with engine.begin() as conn:
         campi_map = load_campi(conn, tables)
-        dept_map = load_departamentos(conn, tables, campi_map, profs_sample, classes_sample, reviews_sample)
+        dept_map = load_departamentos(conn, tables, campi_map, profs_sample, classes_sample)
         prof_map = load_professores(conn, tables, dept_map, profs_sample)
-        mat_map = load_materias(conn, tables, dept_map, profs_sample, classes_sample, reviews_sample)
+        mat_map = load_materias(conn, tables, dept_map, profs_sample, classes_sample)
         turmas_count = load_turmas(conn, tables, mat_map, prof_map, classes_sample)
-        reviews_count = load_avaliacoes(conn, tables, mat_map, prof_map, dept_map, reviews_sample)
 
     assert len(campi_map) == 4
     assert len(dept_map) >= 1
     assert "1234567" in prof_map
     assert "CIC0004" in mat_map
     assert turmas_count == 1
-    assert reviews_count == 1
 
     # Verifica integridade no banco
     with engine.connect() as conn:
         t_prof = tables["professores"]
         t_mat = tables["materias"]
         t_turma = tables["turmas"]
-        t_aval = tables["avaliacoes"]
 
         p_row = conn.execute(select(t_prof.c.nome_completo, t_prof.c.siape)).fetchone()
         assert p_row[0] == "Maria da Silva"
@@ -123,7 +102,3 @@ def test_full_loading_pipeline(sqlite_db):
         turma_row = conn.execute(select(t_turma.c.vagas_ofertadas, t_turma.c.horario_bruto)).fetchone()
         assert turma_row[0] == 40
         assert turma_row[1] == "24M34"
-
-        aval_row = conn.execute(select(t_aval.c.nota_didatica, t_aval.c.status_aprovacao)).fetchone()
-        assert aval_row[0] == 5  # 9.0 / 2 rounded -> 5
-        assert aval_row[1] == "passei"
