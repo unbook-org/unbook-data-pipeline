@@ -28,6 +28,7 @@ data/backup/*
 data/processed/*
 !data/processed/.gitkeep
 !data/processed/legacy_reviews.json
+data/processed/sigaa_curriculos.json
 *.db
 *.sqlite3
 *.csv

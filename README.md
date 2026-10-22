@@ -28,6 +28,7 @@ unbook-pipeline/
 ├── data/
 │   ├── processed/                      # Dados limpos e normalizados
 │   │   ├── sigaa_professores.json      # [gitignore]
+│   │   ├── sigaa_curriculos.json       # [gitignore] Matrizes curriculares normalizadas
 │   │   ├── social_parsed.json          # [gitignore]
 │   │   └── legacy_reviews.json         # Avaliações válidas (matéria, professor, comentário)
 │   └── raw/                            # [Incluso no .gitignore / Git LFS] Dados brutos
@@ -35,7 +36,8 @@ unbook-pipeline/
 │       │   └── avaliacoes_disciplinas.csv  # Dump do formulário (gitignored)
 │       ├── sigaa/
 │       │   ├── seed_professores.json   # 📦 Arquivo Seed (Rastreado via Git LFS)
-│       │   └── sigaa_bruto.json        # Extração bruta pós-Scrapy
+│       │   ├── sigaa_bruto.json        # Extração bruta pós-Scrapy
+│       │   └── curriculos_bruto.json   # Checkpoint bruto das matrizes curriculares
 │       └── social/
 │           └── facebook_dump_dom.json  # Dump DOM capturado pelo Playwright
 ├── docs/
@@ -61,6 +63,7 @@ unbook-pipeline/
 │   │   └── postgres_loader.py          # Ingestão dos dados processados no PostgreSQL
 │   ├── transformers/                   # 🧹 LIMPEZA E ENTITY MATCHING
 │   │   ├── clean_courses.py            # Código SIGAA vs. nome da disciplina
+│   │   ├── clean_curricula.py          # Normalização das matrizes curriculares + cobertura do legacy
 │   │   ├── clean_professors.py         # Normalização de nomes de docentes
 │   │   └── sigaa_cleaner.py            # Normalização e resolução de entidades
 │   └── utils/                          # 🛠️ UTILITÁRIOS GLOBAIS
@@ -154,6 +157,25 @@ python main.py --source sigaa --limit 10
 python main.py --source sigaa
 
 ```
+
+**Matrizes curriculares (`--source sigaa-curriculos`).** Extrai, via Playwright, todas as estruturas curriculares (ativas e inativas) dos cursos de graduação e normaliza para o schema de `src/extractors/sigaa/curriculum/models.py`. Não entra em `--source all`: precisa ser pedida explicitamente. A extração é retomável (cursos já `ok` no bruto são pulados).
+
+```bash
+# Teste: só os 10 primeiros cursos da lista do SIGAA (rede + normalização)
+python main.py --source sigaa-curriculos --limit 10
+
+# Execução completa (158 cursos, ~30 min com concorrência 2)
+python main.py --source sigaa-curriculos
+
+# Sem rede: reprocessa só a partir do bruto existente
+python main.py --source sigaa-curriculos --skip-scrape
+python main.py --source sigaa-curriculos --skip-scrape --limit 10
+
+# Bruto (checkpoint):  data/raw/sigaa/curriculos_bruto.json
+# Processado:          data/processed/sigaa_curriculos.json  [gitignore]
+```
+
+Ao final o run loga o resumo (cursos, estruturas, componentes, descartes) e a cobertura dos `course_code` de `data/processed/legacy_reviews.json` nas matrizes (somente leitura; exige `git lfs pull`).
 
 #### 💬 Squad Social (Comunidades & Redes)
 
